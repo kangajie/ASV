@@ -45,7 +45,7 @@
     <div class="video-wrapper">
         <iframe
             id="youtubePlayer"
-            src="https://youtu.be/A1fgFUnoze0?si=Xez-E9mhvXUyTYlo"
+            src=""
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen
             style="width:100vw;height:100vh;border:none;">
@@ -119,6 +119,11 @@ function loadYouTubeVideo(url) {
     }
 }
 
+// ===================== DEFAULT VIDEO ID =====================
+// GANTI VIDEO ID INI DENGAN VIDEO YOUTUBE ANDA
+// Contoh: 'MIzIyJtTq7g' atau 'A1fgFUnoze0'
+const DEFAULT_VIDEO_ID = 'eXgAX4cKXtc'; // Video ID dari https://youtu.be/eXgAX4cKXtc
+
 // Load video saat halaman ready
 window.addEventListener('DOMContentLoaded', function() {
     const iframe = document.getElementById('youtubePlayer');
@@ -135,12 +140,13 @@ window.addEventListener('DOMContentLoaded', function() {
         const hash = window.location.hash.substring(1);
         if (hash) {
             loadYouTubeVideo(hash);
-        } else if (iframe && iframe.src) {
-            // Cek jika iframe src sudah berisi URL YouTube (bukan format embed)
-            const currentSrc = iframe.src;
-            // Jika bukan format embed, convert dulu
-            if (currentSrc.includes('youtube.com/watch') || currentSrc.includes('youtu.be/') || currentSrc.includes('VIDEO_ID')) {
-                loadYouTubeVideo(currentSrc);
+        } else {
+            // Load default video
+            if (DEFAULT_VIDEO_ID && DEFAULT_VIDEO_ID !== 'VIDEO_ID') {
+                loadYouTubeVideo(DEFAULT_VIDEO_ID);
+            } else {
+                // Jika tidak ada default, tampilkan pesan error
+                console.error('Silakan set DEFAULT_VIDEO_ID atau gunakan parameter ?v=VIDEO_ID');
             }
         }
     }
