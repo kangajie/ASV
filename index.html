@@ -38,11 +38,64 @@
             height: 100%;
             border: none;
             pointer-events: auto;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .video-wrapper iframe.active {
+            opacity: 1;
+        }
+
+        .poster-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .poster-image.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 3;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 30px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .loading-indicator.show {
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="video-wrapper">
+        <img 
+            id="posterImage" 
+            class="poster-image" 
+            src="poster.jpg" 
+            alt="Live Stream Poster"
+            onerror="this.style.display='none'">
+        
+        <div id="loadingIndicator" class="loading-indicator">
+            🔴 Menunggu Live Stream Dimulai...
+        </div>
+        
         <iframe
             id="youtubePlayer"
             src=""
@@ -86,39 +139,146 @@ function extractVideoId(url) {
     return videoId;
 }
 
-function loadYouTubeVideo(url) {
+function loadYouTubeVideo(url, showPoster = false) {
     const videoId = extractVideoId(url);
     if (!videoId) {
         console.error('Video ID tidak ditemukan dari URL:', url);
         return;
     }
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&showinfo=0&controls=1&playsinline=1`;
+    
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&showinfo=0&controls=1&playsinline=1&enablejsapi=1`;
     const iframe = document.getElementById('youtubePlayer');
+    const poster = document.getElementById('posterImage');
+    const loading = document.getElementById('loadingIndicator');
+    
     if (iframe) {
         iframe.src = embedUrl;
+        
+        if (showPoster) {
+            if (poster) {
+                poster.classList.remove('hidden');
+            }
+            iframe.classList.remove('active');
+            if (loading) {
+                loading.classList.add('show');
+            }
+        } else {
+            if (poster) {
+                poster.classList.add('hidden');
+            }
+            iframe.classList.add('active');
+            if (loading) {
+                loading.classList.remove('show');
+            }
+        }
     }
+}
+
+function checkLiveStreamStatus(videoId) {
+    return new Promise((resolve) => {
+        fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+            .then(response => response.json())
+            .then(data => {
+                resolve(true);
+            })
+            .catch(error => {
+                resolve(false);
+            });
+    });
+}
+
+let checkInterval = null;
+
+function startLiveStreamChecker(videoId) {
+    if (checkInterval) {
+        clearInterval(checkInterval);
+    }
+    
+    checkInterval = setInterval(async () => {
+        const isActive = await checkLiveStreamStatus(videoId);
+        
+        if (isActive) {
+            const iframe = document.getElementById('youtubePlayer');
+            const poster = document.getElementById('posterImage');
+            const loading = document.getElementById('loadingIndicator');
+            
+            if (iframe && iframe.src) {
+                const currentSrc = iframe.src;
+                iframe.src = '';
+                setTimeout(() => {
+                    iframe.src = currentSrc;
+                    if (poster) {
+                        poster.classList.add('hidden');
+                    }
+                    iframe.classList.add('active');
+                    if (loading) {
+                        loading.classList.remove('show');
+                    }
+                    if (checkInterval) {
+                        clearInterval(checkInterval);
+                        checkInterval = null;
+                    }
+                }, 500);
+            }
+        }
+    }, 10000);
 }
 
 // ID link dari YouTube
 const DEFAULT_VIDEO_ID = 'SndD8P_P6Tc';
+// Path ke poster image (ganti dengan path poster Anda)
+const POSTER_IMAGE_PATH = 'poster.jpg'; // Ganti dengan nama file poster Anda
 
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
     const iframe = document.getElementById('youtubePlayer');
+    const poster = document.getElementById('posterImage');
     const urlParams = new URLSearchParams(window.location.search);
     const videoParam = urlParams.get('v') || urlParams.get('url') || urlParams.get('youtube');
+    
+    let videoId = null;
+    let isLiveStream = false;
+    
     if (videoParam) {
-        loadYouTubeVideo(videoParam);
+        videoId = extractVideoId(videoParam);
+        isLiveStream = videoParam.includes('/live/') || videoParam.includes('live');
     } else {
         const hash = window.location.hash.substring(1);
         if (hash) {
-            loadYouTubeVideo(hash);
+            videoId = extractVideoId(hash);
+            isLiveStream = hash.includes('/live/') || hash.includes('live');
         } else {
             if (DEFAULT_VIDEO_ID && DEFAULT_VIDEO_ID !== 'VIDEO_ID') {
-                loadYouTubeVideo(DEFAULT_VIDEO_ID);
+                videoId = DEFAULT_VIDEO_ID;
+                isLiveStream = true;
             } else {
                 console.error('Silakan set DEFAULT_VIDEO_ID atau gunakan parameter ?v=VIDEO_ID');
+                return;
             }
         }
+    }
+    
+    if (!videoId) {
+        console.error('Video ID tidak ditemukan');
+        return;
+    }
+    
+    if (poster) {
+        poster.src = POSTER_IMAGE_PATH;
+    }
+    
+    if (isLiveStream) {
+        loadYouTubeVideo(videoId, true);
+        
+        const isActive = await checkLiveStreamStatus(videoId);
+        
+        if (isActive) {
+            loadYouTubeVideo(videoId, false);
+        } else {
+            loadYouTubeVideo(videoId, true);
+            startLiveStreamChecker(videoId);
+        }
+    } else {
+        loadYouTubeVideo(videoId, false);
     }
 });
 
