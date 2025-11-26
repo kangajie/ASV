@@ -53,106 +53,75 @@
     </div>
 
 <script>
-// ===================== YOUTUBE URL CONVERTER =====================
 function extractVideoId(url) {
     if (!url) return null;
-    
-    // Bersihkan URL dari whitespace
     url = url.trim();
-    
-    // Jika sudah berupa Video ID saja (tidak ada http/https/youtube)
     if (!url.includes('http') && !url.includes('youtube') && !url.includes('youtu.be') && !url.includes('/') && !url.includes('?')) {
         return url;
     }
-    
     let videoId = null;
-    
-    // Format: https://www.youtube.com/watch?v=VIDEO_ID&list=...&index=...
-    // Atau: https://www.youtube.com/watch?v=VIDEO_ID?si=...
     const watchMatch = url.match(/[?&]v=([^&?#]+)/);
     if (watchMatch) {
         videoId = watchMatch[1];
     }
-    
-    // Format: https://youtu.be/VIDEO_ID?si=...
-    // Atau: https://youtu.be/VIDEO_ID&si=...
     const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
     if (shortMatch) {
         videoId = shortMatch[1];
     }
-    
-    // Format: https://www.youtube.com/embed/VIDEO_ID?...
     const embedMatch = url.match(/embed\/([^?&#]+)/);
     if (embedMatch) {
         videoId = embedMatch[1];
     }
-    
-    // Format: https://www.youtube.com/v/VIDEO_ID?...
     const vMatch = url.match(/\/v\/([^?&#]+)/);
     if (vMatch) {
         videoId = vMatch[1];
     }
-    
-    // Hapus parameter tambahan jika ada (sudah di-handle oleh regex, tapi double check)
+    const liveMatch = url.match(/\/live\/([^?&#]+)/);
+    if (liveMatch) {
+        videoId = liveMatch[1];
+    }
     if (videoId) {
         videoId = videoId.split('&')[0].split('?')[0].split('#')[0].trim();
     }
-    
     return videoId;
 }
 
 function loadYouTubeVideo(url) {
     const videoId = extractVideoId(url);
-    
     if (!videoId) {
         console.error('Video ID tidak ditemukan dari URL:', url);
         return;
     }
-    
-    // Build embed URL
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&showinfo=0&controls=1&playsinline=1`;
-    
-    // Load ke iframe
     const iframe = document.getElementById('youtubePlayer');
     if (iframe) {
         iframe.src = embedUrl;
     }
 }
 
-// ===================== DEFAULT VIDEO ID =====================
-// GANTI VIDEO ID INI DENGAN VIDEO YOUTUBE ANDA
-// Contoh: 'MIzIyJtTq7g' atau 'A1fgFUnoze0'
-const DEFAULT_VIDEO_ID = 'eXgAX4cKXtc'; // Video ID dari https://youtu.be/eXgAX4cKXtc
+// ID link dari YouTube
+const DEFAULT_VIDEO_ID = 'SndD8P_P6Tc';
 
-// Load video saat halaman ready
 window.addEventListener('DOMContentLoaded', function() {
     const iframe = document.getElementById('youtubePlayer');
-    
-    // Cek URL parameter ?v= atau ?url=
     const urlParams = new URLSearchParams(window.location.search);
     const videoParam = urlParams.get('v') || urlParams.get('url') || urlParams.get('youtube');
-    
     if (videoParam) {
-        // Load dari URL parameter
         loadYouTubeVideo(videoParam);
     } else {
-        // Cek hash (#)
         const hash = window.location.hash.substring(1);
         if (hash) {
             loadYouTubeVideo(hash);
         } else {
-            // Load default video
             if (DEFAULT_VIDEO_ID && DEFAULT_VIDEO_ID !== 'VIDEO_ID') {
                 loadYouTubeVideo(DEFAULT_VIDEO_ID);
             } else {
-                // Jika tidak ada default, tampilkan pesan error
                 console.error('Silakan set DEFAULT_VIDEO_ID atau gunakan parameter ?v=VIDEO_ID');
             }
         }
     }
 });
 
-// ===================== PROTECTION & HARDENING =====================
 document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
     return false;
@@ -187,47 +156,38 @@ document.addEventListener('keydown', function (e) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.keyCode === 73)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.keyCode === 74)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.keyCode === 67)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.keyCode === 85)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && (e.key === 's' || e.key === 'S' || e.keyCode === 83)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && (e.key === 'p' || e.key === 'P' || e.keyCode === 80)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && (e.key === 'a' || e.key === 'A' || e.keyCode === 65)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && e.shiftKey && (e.key === 'P' || e.keyCode === 80)) {
         e.preventDefault();
         return false;
     }
-    
     if (e.ctrlKey && e.shiftKey && (e.key === 'E' || e.keyCode === 69)) {
         e.preventDefault();
         return false;
