@@ -151,25 +151,29 @@ function loadYouTubeVideo(url, showPoster = false) {
     const poster = document.getElementById('posterImage');
     const loading = document.getElementById('loadingIndicator');
     
-    if (iframe) {
-        iframe.src = embedUrl;
-        
-        if (showPoster) {
-            if (poster) {
-                poster.classList.remove('hidden');
-            }
+    if (showPoster) {
+        // Tampilkan poster, JANGAN load iframe (biarkan src kosong)
+        if (poster) {
+            poster.classList.remove('hidden');
+        }
+        if (iframe) {
+            iframe.src = ''; // Kosongkan src agar tidak load YouTube
             iframe.classList.remove('active');
-            if (loading) {
-                loading.classList.add('show');
-            }
-        } else {
-            if (poster) {
-                poster.classList.add('hidden');
-            }
+        }
+        if (loading) {
+            loading.classList.add('show');
+        }
+    } else {
+        // Tampilkan iframe YouTube, sembunyikan poster
+        if (poster) {
+            poster.classList.add('hidden');
+        }
+        if (iframe) {
+            iframe.src = embedUrl; // Load YouTube embed
             iframe.classList.add('active');
-            if (loading) {
-                loading.classList.remove('show');
-            }
+        }
+        if (loading) {
+            loading.classList.remove('show');
         }
     }
 }
@@ -198,27 +202,30 @@ function startLiveStreamChecker(videoId) {
         const isActive = await checkLiveStreamStatus(videoId);
         
         if (isActive) {
+            // Live stream sudah aktif, load video
             const iframe = document.getElementById('youtubePlayer');
             const poster = document.getElementById('posterImage');
             const loading = document.getElementById('loadingIndicator');
             
-            if (iframe && iframe.src) {
-                const currentSrc = iframe.src;
-                iframe.src = '';
-                setTimeout(() => {
-                    iframe.src = currentSrc;
-                    if (poster) {
-                        poster.classList.add('hidden');
-                    }
-                    iframe.classList.add('active');
-                    if (loading) {
-                        loading.classList.remove('show');
-                    }
-                    if (checkInterval) {
-                        clearInterval(checkInterval);
-                        checkInterval = null;
-                    }
-                }, 500);
+            if (iframe) {
+                // Load YouTube embed
+                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&showinfo=0&controls=1&playsinline=1&enablejsapi=1`;
+                iframe.src = embedUrl;
+                iframe.classList.add('active');
+                
+                // Sembunyikan poster
+                if (poster) {
+                    poster.classList.add('hidden');
+                }
+                if (loading) {
+                    loading.classList.remove('show');
+                }
+                
+                // Stop checking setelah live stream aktif
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                    checkInterval = null;
+                }
             }
         }
     }, 10000);
@@ -264,20 +271,27 @@ window.addEventListener('DOMContentLoaded', async function() {
     
     if (poster) {
         poster.src = POSTER_IMAGE_PATH;
+        // Pastikan poster visible saat pertama kali
+        poster.classList.remove('hidden');
     }
     
     if (isLiveStream) {
+        // Untuk live stream, tampilkan poster dulu
         loadYouTubeVideo(videoId, true);
         
+        // Check apakah live stream sudah aktif
         const isActive = await checkLiveStreamStatus(videoId);
         
         if (isActive) {
+            // Live stream sudah aktif, tampilkan video
             loadYouTubeVideo(videoId, false);
         } else {
+            // Live stream belum aktif, tetap tampilkan poster dan mulai checker
             loadYouTubeVideo(videoId, true);
             startLiveStreamChecker(videoId);
         }
     } else {
+        // Video biasa, langsung tampilkan
         loadYouTubeVideo(videoId, false);
     }
 });
