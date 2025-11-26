@@ -44,13 +44,109 @@
 <body>
     <div class="video-wrapper">
         <iframe
-            src="https://www.youtube.com/watch?v=A1fgFUnoze0&list=RDS4QgHXoK1lM&index=27"
+            id="youtubePlayer"
+            src="https://youtu.be/A1fgFUnoze0?si=Xez-E9mhvXUyTYlo"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowfullscreen
             style="width:100vw;height:100vh;border:none;">
         </iframe>
     </div>
 
 <script>
+// ===================== YOUTUBE URL CONVERTER =====================
+function extractVideoId(url) {
+    if (!url) return null;
+    
+    // Bersihkan URL dari whitespace
+    url = url.trim();
+    
+    // Jika sudah berupa Video ID saja (tidak ada http/https/youtube)
+    if (!url.includes('http') && !url.includes('youtube') && !url.includes('youtu.be') && !url.includes('/') && !url.includes('?')) {
+        return url;
+    }
+    
+    let videoId = null;
+    
+    // Format: https://www.youtube.com/watch?v=VIDEO_ID&list=...&index=...
+    // Atau: https://www.youtube.com/watch?v=VIDEO_ID?si=...
+    const watchMatch = url.match(/[?&]v=([^&?#]+)/);
+    if (watchMatch) {
+        videoId = watchMatch[1];
+    }
+    
+    // Format: https://youtu.be/VIDEO_ID?si=...
+    // Atau: https://youtu.be/VIDEO_ID&si=...
+    const shortMatch = url.match(/youtu\.be\/([^?&#]+)/);
+    if (shortMatch) {
+        videoId = shortMatch[1];
+    }
+    
+    // Format: https://www.youtube.com/embed/VIDEO_ID?...
+    const embedMatch = url.match(/embed\/([^?&#]+)/);
+    if (embedMatch) {
+        videoId = embedMatch[1];
+    }
+    
+    // Format: https://www.youtube.com/v/VIDEO_ID?...
+    const vMatch = url.match(/\/v\/([^?&#]+)/);
+    if (vMatch) {
+        videoId = vMatch[1];
+    }
+    
+    // Hapus parameter tambahan jika ada (sudah di-handle oleh regex, tapi double check)
+    if (videoId) {
+        videoId = videoId.split('&')[0].split('?')[0].split('#')[0].trim();
+    }
+    
+    return videoId;
+}
+
+function loadYouTubeVideo(url) {
+    const videoId = extractVideoId(url);
+    
+    if (!videoId) {
+        console.error('Video ID tidak ditemukan dari URL:', url);
+        return;
+    }
+    
+    // Build embed URL
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&showinfo=0&controls=1&playsinline=1`;
+    
+    // Load ke iframe
+    const iframe = document.getElementById('youtubePlayer');
+    if (iframe) {
+        iframe.src = embedUrl;
+    }
+}
+
+// Load video saat halaman ready
+window.addEventListener('DOMContentLoaded', function() {
+    const iframe = document.getElementById('youtubePlayer');
+    
+    // Cek URL parameter ?v= atau ?url=
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoParam = urlParams.get('v') || urlParams.get('url') || urlParams.get('youtube');
+    
+    if (videoParam) {
+        // Load dari URL parameter
+        loadYouTubeVideo(videoParam);
+    } else {
+        // Cek hash (#)
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            loadYouTubeVideo(hash);
+        } else if (iframe && iframe.src) {
+            // Cek jika iframe src sudah berisi URL YouTube (bukan format embed)
+            const currentSrc = iframe.src;
+            // Jika bukan format embed, convert dulu
+            if (currentSrc.includes('youtube.com/watch') || currentSrc.includes('youtu.be/') || currentSrc.includes('VIDEO_ID')) {
+                loadYouTubeVideo(currentSrc);
+            }
+        }
+    }
+});
+
+// ===================== PROTECTION & HARDENING =====================
 document.addEventListener('contextmenu', function (e) {
     e.preventDefault();
     return false;
@@ -186,5 +282,3 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
-
-
